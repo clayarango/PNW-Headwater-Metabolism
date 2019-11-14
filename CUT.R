@@ -1,3 +1,5 @@
+#this new header can be deleted
+
 data1=read.csv("all_trans_short_r.csv",header=TRUE) #load data in short format with NA's
 #install packages
 install.packages("nlme")
