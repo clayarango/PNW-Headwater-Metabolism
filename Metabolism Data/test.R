@@ -1,10 +1,18 @@
 ### Master script to analyze PNW Metabolism data via streammetabolizer
 ### Created by AJR
 ### Created on 2019-12-04
-### Looks like git works - cpa
+
 
 ### Read in data from git repo
 test.data<-read.csv(file="./Metabolism Data/test.csv")
+
+#Install stream metabolizer:
+install.packages("streamMetabolizer", dependencies=TRUE, 
+                repos=c("https://owi.usgs.gov/R","https://cran.rstudio.com"))
+
+#read in packages
+library(chron)
+library(streametabolizer)
 
 # LOAD O2 SATURATION FUNCTION
 
@@ -20,4 +28,6 @@ osat<- function(temp, bp) {
   sato<-(exp(a0 + a1*tstd + a2*tstd^2 + a3*tstd^3 + a4*tstd^4+a5*tstd^5))*((bp-u)/(760-u))*1.42905
   sato
 }
+
+test.data$DO.sat<-osat(test.data$temp.water, test.data$bp)
 
