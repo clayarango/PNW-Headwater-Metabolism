@@ -2,6 +2,10 @@
 ### Created by AJR
 ### Created on 2019-12-04
 
+### AJR got the base model and a model with a constrained K600 (based on slope) prior running
+### AJR next steps: work on the calc_light compared to measured light models, but calc_light 
+### doesn't seem to give the right data (i.e., light peaks at ~10PM based on calc_light right now...)
+
 
 ### Read in data from git repo
 test.data<-read.csv(file="./Metabolism Data/test.csv")
@@ -45,8 +49,18 @@ osat<- function(temp, bp) {
 #Now run it on the data to calulcate DO.sat
 test.data$DO.sat<-osat(test.data$temp.water, test.data$bp)
 
+
 #Check that DO %sat seemingly makes sense:
 plot(test.data$datetime, (test.data$DO.obs/test.data$DO.sat)*100)
+
+# Try having stream metabolizer get light for you instead of using canopy-influenced light
+test.data$calc.light<-calc_light(test.data$solar.time, latitude=47.296801, longitude=120.705743)
+
+#Compare measured PAR with streammetabolizer PAR:
+plot(test.data$datetime, test.data$calc.light)
+plot(test.data$datetime, test.data$light)
+plot(test.data$datetime, test.data$solar.time)
+
 
 #Look at the data through streammetabolizer's eyes:
 windows(width=7, height=3)
@@ -59,20 +73,35 @@ test.data %>% unitted::v() %>%
   facet_grid(units ~ ., scale='free_y') + theme_bw() + scale_color_discrete('variable')
 
 data<-test.data[,9:14]
+light.test.data<-test.data[,9:14]
+light.test.data$light<-test.data$calc.light
 
 #Pick a model in stream metabolizer:
 base.model<-mm_name(
   type="bayes", pool_K600='none')
 
-base.model_specs<-specs(base.model, day_start=10, day_end=34)
+base.model_specs<-specs(base.model, day_start=10, day_end=34, burnin_steps=100, saved_steps=100)
+k.slope.model_specs<-specs(base.model, day_start=10, day_end=34, K600_daily_meanlog=log(80.768051), K600_daily_sdlog=0.01, burnin_steps=100, saved_steps=100)
 
-test.fit<-metab(base.model_specs, data=data)
 
-predict_metab(test.fit)
-plot_metab_preds(test.fit)
-plot_DO_preds(test.fit)
-predict_DO(test.fit)
-mcmc<-get_mcmc(test.fit)
-traceplot(mcmc, pars="GPP")
-get_fit(test.fit)$overall %>%
-  select(ends_with('R'))
+base.fit<-metab(base.model_specs, data=data)
+base.light.fit<-metab(base.model_specs, data=light.test.data)
+k.slope.fit<-metab(k.slope.model_specs, data=data)
+k.slope.light.fit<-metab(k.slope.model_specs, data=light.test.data)
+
+predict_metab(base.fit)
+predict_metab(k.slope.fit)
+predict_metab(k.slope.light.fit)
+plot_metab_preds(k.slope.fit)
+plot_metab_preds(k.slope.light.fit)
+plot_DO_preds(k.slope.fit)
+plot_DO_preds(k.slope.light.fit)
+plot_DO_preds(base.light.fit)
+
+predict_DO(k.slope.fit)
+base.mcmc<-get_mcmc(base.fit)
+slope.mcmc<-get_mcmc(k.slope.fit)
+traceplot(base.mcmc, pars="K600_daily")
+traceplot(slope.mcmc, pars="ER")
+get_fit(base.fit)$overall %>%
+  select(ends_with('Rhat'))
