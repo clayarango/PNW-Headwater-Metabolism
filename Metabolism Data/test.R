@@ -1,7 +1,7 @@
 ### Master script to analyze PNW Metabolism data via streammetabolizer
 ### Created by AJR
 ### Created on 2019-12-04
-
+### Looks like git works - cpa
 
 ### Read in data from git repo
 test.data<-read.csv(file="./Metabolism Data/test.csv")
